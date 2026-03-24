@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buon Compleanno, Gino!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono&display=swap');
+
+        :root {
+            --bg-dark: #020617;
+            --gold: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden; 
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .hero-font {
+            font-family: 'Bungee', cursive;
+        }
+
+        .floating-element {
+            position: absolute;
+            cursor: pointer;
+            z-index: 10;
+            user-select: none;
+            will-change: transform, opacity;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: filter 0.3s ease, opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .floating-element.hidden-emoji {
+            opacity: 0;
+            transform: scale(0) !important;
+            pointer-events: none;
+        }
+
+        .floating-element:hover {
+            filter: drop-shadow(0 0 25px rgba(245, 158, 11, 1));
+            z-index: 20;
+        }
+
+        .bg-gradient-custom {
+            background: radial-gradient(circle at top right, #1e293b, #020617);
+        }
+
+        #message-modal, #video-modal {
+            display: none;
+            backdrop-filter: blur(12px);
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .clock-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .counter-card {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .date-badge {
+            font-size: 0.7rem;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 2px 8px;
+            border-radius: 99px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .error-container {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            z-index: 9999;
+            color: #3c4043;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            padding: 5% 10%;
+            overflow-y: auto;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            color: #dadce0;
+            margin-bottom: 20px;
+        }
+
+        .server-error-icon { color: #ea4335; }
+
+        .error-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: #202124;
+        }
+
+        .error-desc {
+            font-size: 14px;
+            line-height: 20px;
+            margin-bottom: 24px;
+            color: #5f6368;
+        }
+
+        .reload-btn {
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .reload-btn:hover { background-color: #185abc; }
+        .reload-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .err-code {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #70757a;
+            font-family: monospace;
+        }
+
+        #game-canvas {
+            background: #f7f7f7;
+            border-bottom: 2px solid #535353;
+            display: block;
+            margin: 20px 0;
+            max-width: 100%;
+            cursor: pointer;
+        }
+
+        .game-instructions {
+            font-size: 12px;
+            color: #5f6368;
+            margin-bottom: 10px;
+        }
+
+        #countdown-timer {
+            font-weight: bold;
+            color: #ea4335;
+        }
+
+        #scare-heart {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: radial-gradient(circle, #450a0a 0%, #020617 100%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in;
+        }
+        
+        .shatter {
+            animation: shatter-anim 0.4s ease-out forwards;
+        }
+
+        @keyframes shatter-anim {
+            0% { transform: scale(1); filter: contrast(1); }
+            100% { transform: scale(1.5); filter: contrast(5); opacity: 0; }
+        }
+
+        .music-menu {
+            position: fixed;
+            bottom: 8rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 60;
+        }
+
+        .music-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .song-btn {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 99px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .song-btn:hover {
+            background: #f59e0b;
+            color: black;
+            transform: translateX(-5px);
+        }
+
+        .song-btn.playing {
+            border-color: #22c55e;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+
+        #surprise-btn {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+
+        #surprise-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-gradient-custom" id="body-main">
+
+    <!-- ERROR SCREEN 1 -->
+    <div id="error-screen-1" class="error-container">
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h1 class="error-title">This page isn’t working</h1>
+        <p class="error-desc">
+            <strong>birthday-gift.local</strong> is currently unable to handle this request.<br>
+            The connection was reset by the peer (GinoBello_Uplink_Timeout).
+        </p>
+        <button class="reload-btn" id="reload-to-offline">Reload</button>
+        <p class="err-code">HTTP ERROR 500</p>
+    </div>
+
+    <!-- ERROR SCREEN 2 -->
+    <div id="error-screen-2" class="error-container">
+        <div class="error-icon server-error-icon"><i class="fas fa-server"></i></div>
+        <div class="flex justify-between items-end">
+            <h1 class="error-title">Server not found</h1>
+            <p class="text-xs mb-4 text-slate-400">Retrying connection in <span id="countdown-timer">10</span>s</p>
+        </div>
+        
+        <p class="game-instructions">Wait for the server to respond or play a quick game...</p>
+        <canvas id="game-canvas" width="600" height="150"></canvas>
+
+        <p class="error-desc">We can’t connect to the server at <strong>birthday-gift.local</strong>. The server might be busy.</p>
+        
+        <p class="font-bold text-sm mb-2">Possible fixes:</p>
+        <ul class="list-disc ml-5 text-sm text-[#5f6368]">
+            <li>Try again in a few seconds</li>
+            <li>Check your internet connection</li>
+            <li>Don't forget to breathe</li>
+        </ul>
+        
+        <p class="err-code">DNS_PROBE_FINISHED_SERVER_REBOOTING_FOR_SURPRISE</p>
+    </div>
+
+    <!-- The Surprise Reveal -->
+    <div id="scare-heart">
+        <div class="text-[10rem] md:text-[15rem] pulse drop-shadow-[0_0_50px_rgba(239,68,68,0.8)]">🥳🥳🥳</div>
+        <h2 class="hero-font text-3xl md:text-5xl text-white mt-8 text-center px-4">Wow, you've reached the best point!</h2>
+        <p class="text-lg md:text-xl text-red-400 mt-4 italic text-center">Thank you for being patient. Click the button below to read more messages!</p>
+        <button onclick="dismissShock()" class="mt-12 px-8 py-3 bg-white text-black rounded-full font-bold hover:bg-yellow-400 transition-colors">Continue</button>
+    </div>
+
+    <!-- Music Player -->
+    <audio id="bg-music" loop></audio>
+
+    <header class="p-6 flex flex-col lg:flex-row justify-between items-center gap-6 relative z-50 pointer-events-none w-full">
+        <div class="flex flex-col items-center lg:items-start pointer-events-auto">
+            <h1 class="hero-font text-3xl md:text-5xl text-yellow-500 mb-2">Hey, it's 26 March!!!</h1>
+            <p class="text-slate-400 italic">Buon compleanno, amore mio! For you, i made this special page with love❤️</p>
+        </div>
+
+        <div class="flex flex-col items-center gap-4 pointer-events-auto">
+            <div class="flex flex-wrap justify-center gap-4" id="clock-container">
+                <div class="counter-card p-4 rounded-2xl text-center min-w-[120px]">
+                    <p class="text-xs uppercase tracking-widest text-yellow-500 font-bold mb-1">Unopened</p>
+                    <div id="items-left" class="text-3xl font-mono font-bold tracking-tighter text-white">26</div>
+                    <div class="text-[10px] uppercase text-yellow-600 mt-1 font-bold">Messages</div>
+                </div>
+
+                <div class="clock-card p-4 rounded-2xl text-center min-w-[160px]">
+                    <p class="text-xs uppercase tracking-widest text-green-400 font-bold mb-1">🇮🇹 Italy</p>
+                    <div id="italy-time" class="text-2xl font-mono font-bold tracking-tighter">00:00:00</div>
+                    <div id="italy-date" class="date-badge">Loading...</div>
+                </div>
+                <div class="clock-card p-4 rounded-2xl text-center min-w-[160px]">
+                    <p class="text-xs uppercase tracking-widest text-red-400 font-bold mb-1">🇮🇩 Indonesia</p>
+                    <div id="indo-time" class="text-2xl font-mono font-bold tracking-tighter">00:00:00</div>
+                    <div id="indo-date" class="date-badge">Loading...</div>
+                </div>
+            </div>
+            <!-- NEW SURPRISE BUTTON -->
+            <button id="surprise-btn" onclick="openVideoModal()" class="bg-gradient-to-r from-red-500 to-yellow-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:scale-105 transition-all">
+                <i class="fas fa-gift mr-2"></i> REVEAL SURPRISE
+            </button>
+        </div>
+    </header>
+
+    <main class="fixed inset-0 w-full h-full" id="stage">
+        <div class="absolute inset-0 flex items-center justify-center text-center px-4 pointer-events-none">
+            <div class="z-0 opacity-10 select-none">
+                <h2 class="text-6xl md:text-[12rem] hero-font">26</h2>
+                <p class="text-xl italic">Find a message in every emoji </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Music Control UI -->
+    <div class="music-menu" id="music-menu">
+        <button class="song-btn" onclick="playSong(0, this)">
+            <i class="fas fa-music"></i> Song 1
+        </button>
+        <button class="song-btn" onclick="playSong(1, this)">
+            <i class="fas fa-glasses"></i> Song 2
+        </button>
+        <button class="song-btn" onclick="playSong(2, this)">
+            <i class="fas fa-sun"></i> Song 3
+        </button>
+    </div>
+
+    <div class="fixed bottom-8 right-8 z-50">
+        <button id="music-toggle" class="bg-yellow-500 hover:bg-yellow-400 text-black w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all pulse">
+            <i class="fas fa-compact-disc text-2xl" id="music-icon"></i>
+        </button>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 border-2 border-yellow-500 p-8 rounded-3xl max-w-lg w-full relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div id="modal-content" class="text-center"></div>
+        </div>
+    </div>
+
+    <!-- VIDEO SURPRISE MODAL -->
+    <div id="video-modal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90">
+        <div class="w-full max-w-4xl flex flex-col items-center">
+            <div class="w-full relative pt-[56.25%] mb-6 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-yellow-500">
+                <iframe id="surprise-video" class="absolute inset-0 w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="text-center">
+                <h3 class="hero-font text-3xl text-yellow-500 mb-2">CONGRATULATION!</h3>
+                <p class="text-white text-lg mb-8 italic">❤️❤️❤️</p>
+                <button onclick="closeVideoModal()" class="px-8 py-3 bg-white text-black rounded-full font-bold hover:bg-yellow-400 transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CLOCKS ---
+        function updateClocks() {
+            const now = new Date();
+            const optionsDate = { day: '2-digit', month: 'short', year: 'numeric' };
+            document.getElementById('italy-time').innerText = now.toLocaleTimeString('en-GB', { timeZone: 'Europe/Rome' });
+            document.getElementById('italy-date').innerText = now.toLocaleDateString('en-GB', { timeZone: 'Europe/Rome', ...optionsDate });
+            document.getElementById('indo-time').innerText = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta' });
+            document.getElementById('indo-date').innerText = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Jakarta', ...optionsDate });
+        }
+        setInterval(updateClocks, 1000);
+        updateClocks();
+
+        // --- MUSIC ---
+        const music = document.getElementById('bg-music');
+        const musicToggle = document.getElementById('music-toggle');
+        const musicIcon = document.getElementById('music-icon');
+        const musicMenu = document.getElementById('music-menu');
+        
+        const playlist = [
+            "Happy Birthday to You.mp3",
+            "The Game Pizza Theme.mp3",
+            "Pirates of the Caribbean -  He's a Pirate - Klaus Badelt.mp3"
+        ];
+
+        let currentSongIndex = -1;
+
+        musicToggle.onclick = () => {
+            musicMenu.classList.toggle('active');
+            musicIcon.classList.toggle('fa-spin');
+        };
+
+        function playSong(index, btn) {
+            document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('playing'));
+            if (currentSongIndex === index && !music.paused) {
+                music.pause();
+                currentSongIndex = -1;
+                musicToggle.classList.add('pulse');
+            } else {
+                music.src = playlist[index];
+                music.play();
+                currentSongIndex = index;
+                btn.classList.add('playing');
+                musicToggle.classList.remove('pulse');
+            }
+            if (window.innerWidth < 768) {
+                setTimeout(() => musicMenu.classList.remove('active'), 500);
+            }
+        }
+
+        // --- DATA ---
+        const itemsData = [
+            { id: 1, icon: '🍕', text: "I love you more than Italians love arguing about illegal pizza🍕🤪" },
+            { id: 2, icon: '🐉', text: "<b>Fun Fact!</b> In Chinese year, 2000 was the year of the metal dragon🐉 A dragon is known for their brave, fierce, confidence, independent, powerful, loyal, passionate, and vulnerable only with the chosen ones. And thank you for choosing me as that person🥰" },
+            { id: 3, icon: '🌍', text: "<b>Fun Fact!</b> The distance from Lecce (IT) to Bandung (ID) is 13,590km by walking🚶‍➡️🌍" },
+            { id: 4, icon: '🦕', text: "Guess what does the letter G stands for? Ginosauro 🦕" },
+            { id: 5, icon: '🦏', text: "Guess what does the letter G stands for? Ginoceronte 🦏" },
+            { id: 6, icon: '🔥', text: "We are twin flames under the star sign of Aries♈🔥" },
+            { id: 7, icon: '🎈', text: "Please be happy on your special day, or not, here's a balloon for you🎈🎈🎈" },
+            { id: 8, icon: '🎂', text: "Happy, Happier, Happiest birthday for my very, very, very handsome Gino!🎂😚❤️" },
+            { id: 9, icon: '🍝', text: "La pasta italiana è sempre la migliore, proprio come te🍝❤️" },
+            { id: 10, icon: '🏠', text: "In Italian, casa means home/house. Allora, tu sei la mia casa, un posto dove sempre voglio andare🏠" },
+            { id: 11, icon: '⏰', text: "The world spins differently where you are, but i would follow it anywhere to be with you🌍⏰" },
+            { id: 12, icon: '🪒', text: "Con o senza baffi e pizzetto, sei ancora bello🪒🧔🏻‍♂️🥰" },
+            { id: 13, icon: '🦖', text: "Gi... no my love, it's just a T-Rex🦖😂" },
+            { id: 14, icon: '❤️', text: "You're my heartbeat, my chaos, but also my calm👀❤️" },
+            { id: 15, icon: '🌞', text: "You are my sunshine, my only sunshine. You make me happy, when skies are grey ♫🌞" },
+            { id: 16, icon: '🍀', text: "Finding you felt like hitting the jackpot, my lucky clover🍀" },
+            { id: 17, icon: '🫒', text: "Strong root, simple, and real🫒 I love everything about you. I love your weaknesses and strengths. I love your dark and bright side. I love you inside out❤️" },
+            { id: 18, icon: '🍭', text: "Another remedy to makes you feel better🍭🥹" },
+            { id: 19, icon: '🍆', text: "Please keep your helicopter healthy, i like him🍆😜" },
+            { id: 20, icon: '👀', text: "Waaa how many message have you read baby?👀" },
+            { id: 21, icon: '🍫', text: "I would give you a chocolate... but i would rather taste you instead 🍫😝" },
+            { id: 22, icon: '⚓', text: "The anchor has fallen, i've completely fallen into you⚓ <br><br> <a href='https://open.spotify.com/track/3fgdtD7nivCvPueM8UmvFg?si=2af43b73330541bb' target='_blank' class='text-yellow-500 underline'>A song for you, click here</a>" },
+            { id: 23, icon: '🎊', text: "Buon compleanno Gino bellissimo😚❤️🥳🥳🥳" },
+            { id: 24, icon: '🧲', text: "Come la gravità, sei così magnetico. Non riesco a resisterti🧲" },
+            { id: 25, icon: '💪🏻', text: "Keep going my baby, you got this!💪🏻" },
+            { id: 26, icon: '💋', text: "Tanti baci per te, amore mio😘😘😘😘😘😘😘😘😘😘" }
+        ];
+
+        // --- PHYSICS & EMOJIS ---
+        const stage = document.getElementById('stage');
+        const floatingElements = [];
+        const radius = 40; 
+        let mouseX = -1000, mouseY = -1000;
+        let clickCount = 0;
+        let shockTriggered = false;
+        let hasTriggeredError = false; 
+        const openedItems = new Set();
+        let isAllFound = false; 
+        const itemsLeftDisplay = document.getElementById('items-left');
+
+        function updateItemCounter() {
+            if (isAllFound) return;
+
+            const total = itemsData.length;
+            const remaining = total - openedItems.size;
+            itemsLeftDisplay.innerText = remaining;
+            
+            if (remaining === 0) {
+                isAllFound = true; 
+                itemsLeftDisplay.classList.add('text-green-400');
+                itemsLeftDisplay.innerText = "ALL FOUND!";
+                
+                // SHOW THE REVEAL BUTTON
+                document.getElementById('surprise-btn').classList.add('show');
+
+                // Respawn items after a delay so the fun continues
+                setTimeout(respawnItems, 2000);
+            }
+        }
+
+        function respawnItems() {
+            openedItems.clear();
+            floatingElements.forEach((item, index) => {
+                setTimeout(() => {
+                    item.el.classList.remove('hidden-emoji');
+                    item.x = Math.random() * (window.innerWidth - radius * 2) + radius;
+                    item.y = Math.random() * (window.innerHeight - radius * 2) + radius;
+                    item.vx = (Math.random() - 0.5) * 15;
+                    item.vy = (Math.random() - 0.5) * 15;
+                }, index * 100);
+            });
+        }
+
+        // --- VIDEO MODAL LOGIC ---
+        function openVideoModal() {
+            const videoFrame = document.getElementById('surprise-video');
+            // Standard birthday greeting video
+            videoFrame.src = "https://www.youtube.com/embed/osS_Wl2yXkI?autoplay=1";
+            document.getElementById('video-modal').style.display = 'flex';
+        }
+
+        function closeVideoModal() {
+            const videoFrame = document.getElementById('surprise-video');
+            videoFrame.src = ""; 
+            document.getElementById('video-modal').style.display = 'none';
+        }
+
+        // --- DINO GAME LOGIC ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        let gameRunning = false;
+        let dino = { x: 50, y: 120, w: 30, h: 30, dy: 0, jump: -10, gravity: 0.6, grounded: true };
+        let obstacles = [];
+        let score = 0;
+        let gameFrame = 0;
+
+        function drawDino() {
+            ctx.font = '30px serif';
+            ctx.fillText('🦖', dino.x, dino.y); 
+        }
+
+        function createObstacle() {
+            if (gameFrame % 100 === 0) {
+                obstacles.push({ x: canvas.width, y: 120, w: 20, h: 30, type: '💣' });
+            }
+        }
+
+        function drawObstacles() {
+            obstacles.forEach((ob, index) => {
+                ob.x -= 5;
+                ctx.font = '24px serif';
+                ctx.fillText(ob.type, ob.x, ob.y);
+                if (dino.x < ob.x + ob.w && dino.x + dino.w > ob.x && dino.y - 25 < ob.y && dino.y > ob.y - ob.h) {
+                    gameOver();
+                }
+                if (ob.x + ob.w < 0) obstacles.splice(index, 1);
+            });
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText('GAME OVER - Tap to Restart', 180, 75);
+        }
+
+        function updateGame() {
+            if (!gameRunning) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = '#535353';
+            ctx.moveTo(0, 125);
+            ctx.lineTo(canvas.width, 125);
+            ctx.stroke();
+            dino.y += dino.dy;
+            if (dino.y < 120) {
+                dino.dy += dino.gravity;
+                dino.grounded = false;
+            } else {
+                dino.y = 120;
+                dino.dy = 0;
+                dino.grounded = true;
+            }
+            drawDino();
+            createObstacle();
+            drawObstacles();
+            score++;
+            ctx.fillStyle = '#535353';
+            ctx.font = '14px Arial';
+            ctx.fillText(`Score: ${Math.floor(score/10)}`, 520, 30);
+            gameFrame++;
+            requestAnimationFrame(updateGame);
+        }
+
+        function handleJump() {
+            if (!gameRunning) {
+                gameRunning = true;
+                score = 0;
+                obstacles = [];
+                gameFrame = 0;
+                updateGame();
+            } else if (dino.grounded) {
+                dino.dy = dino.jump;
+            }
+        }
+
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space' && shockTriggered) handleJump(); });
+        canvas.addEventListener('mousedown', () => { if (shockTriggered) handleJump(); });
+
+        // --- ERRORS & CHAIN ---
+        function triggerChainError() {
+            if (hasTriggeredError || shockTriggered) return;
+            shockTriggered = true;
+            hasTriggeredError = true;
+            const err1 = document.getElementById('error-screen-1');
+            const err2 = document.getElementById('error-screen-2');
+            const reloadBtn = document.getElementById('reload-to-offline');
+            const heartScreen = document.getElementById('scare-heart');
+            const countdownEl = document.getElementById('countdown-timer');
+            err1.style.display = 'block';
+            reloadBtn.onclick = () => {
+                reloadBtn.disabled = true;
+                reloadBtn.innerText = "Retrying...";
+                setTimeout(() => {
+                    err1.style.display = 'none';
+                    err2.style.display = 'block';
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                    ctx.font = '30px serif';
+                    ctx.fillText('🦖', dino.x, dino.y);
+                    ctx.beginPath(); ctx.moveTo(0, 125); ctx.lineTo(canvas.width, 125); ctx.stroke();
+                    ctx.fillStyle = '#535353';
+                    ctx.font = '16px Arial';
+                    ctx.fillText('PRESS SPACE TO PLAY', 220, 75);
+                    let timeLeft = 20;
+                    const timerInterval = setInterval(() => {
+                        timeLeft--;
+                        countdownEl.innerText = timeLeft;
+                        if (timeLeft <= 0) {
+                            clearInterval(timerInterval);
+                            finishSequence();
+                        }
+                    }, 1000);
+                    function finishSequence() {
+                        gameRunning = false;
+                        err2.classList.add('shatter');
+                        setTimeout(() => {
+                            err2.style.display = 'none';
+                            heartScreen.style.display = 'flex';
+                            heartScreen.style.opacity = '1';
+                            heartScreen.style.pointerEvents = 'auto';
+                        }, 400);
+                    }
+                }, 2000);
+            };
+        }
+
+        function dismissShock() {
+            document.getElementById('scare-heart').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('scare-heart').style.display = 'none';
+                shockTriggered = false;
+            }, 500);
+        }
+
+        function createFloatingItem(data) {
+            const div = document.createElement('div');
+            div.className = 'floating-element text-4xl md:text-5xl';
+            div.style.width = radius * 2 + 'px';
+            div.style.height = radius * 2 + 'px';
+            div.innerHTML = data.icon;
+            const item = {
+                el: div,
+                x: Math.random() * (window.innerWidth - radius * 2) + radius,
+                y: Math.random() * (window.innerHeight - radius * 2) + radius,
+                vx: (Math.random() - 0.5) * 12, 
+                vy: (Math.random() - 0.5) * 12, 
+                radius: radius,
+                data: data
+            };
+            
+            div.onclick = (e) => {
+                e.stopPropagation();
+                div.classList.add('hidden-emoji');
+                
+                if (!openedItems.has(data.id)) {
+                    openedItems.add(data.id);
+                    updateItemCounter();
+                }
+                if (!hasTriggeredError) {
+                    clickCount++;
+                    if (clickCount === 20) triggerChainError(); // Error triggers on 3rd click
+                }
+                showModal(data.text);
+            };
+            stage.appendChild(div);
+            floatingElements.push(item);
+        }
+
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+
+        function updatePhysics() {
+            const threshold = 250, repulsionForce = 1800;
+            for (let i = 0; i < floatingElements.length; i++) {
+                const a = floatingElements[i];
+                a.x += a.vx; a.y += a.vy;
+                if (a.x < a.radius) { a.x = a.radius; a.vx = Math.abs(a.vx) * 1.1; }
+                if (a.x > window.innerWidth - a.radius) { a.x = window.innerWidth - a.radius; a.vx = -Math.abs(a.vx) * 1.1; }
+                if (a.y < a.radius) { a.y = a.radius; a.vy = Math.abs(a.vy) * 1.1; }
+                if (a.y > window.innerHeight - a.radius) { a.y = window.innerHeight - a.radius; a.vy = -Math.abs(a.vy) * 1.1; }
+                
+                const dx = a.x - mouseX, dy = a.y - mouseY, dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < threshold) {
+                    const force = (threshold - dist) / repulsionForce;
+                    a.vx += dx * force; a.vy += dy * force;
+                }
+                const maxSpeed = 20, speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
+                if (speed > maxSpeed) { a.vx = (a.vx / speed) * maxSpeed; a.vy = (a.vy / speed) * maxSpeed; }
+                a.vx *= 0.996; a.vy *= 0.996;
+                a.el.style.transform = `translate3d(${a.x - a.radius}px, ${a.y - a.radius}px, 0) rotate(${a.vx * 20}deg)`;
+            }
+            requestAnimationFrame(updatePhysics);
+        }
+
+        itemsData.forEach(createFloatingItem);
+        requestAnimationFrame(updatePhysics);
+
+        const modal = document.getElementById('message-modal'), modalContent = document.getElementById('modal-content');
+        function showModal(content) {
+            modalContent.innerHTML = `<p class="text-xl leading-relaxed text-slate-200">${content}</p>`;
+            modal.style.display = 'flex';
+        }
+        function closeModal() { modal.style.display = 'none'; }
+        window.onclick = (e) => { if (e.target == modal) closeModal(); };
+    </script>
+</body>
+</html>
